@@ -18,7 +18,7 @@ def comp_log_returns(df: pd.DataFrame) -> pd.DataFrame:
 # Compute historic vol
 
 
-def comp_hist_vol(df: pd.DataFrame, period: int = 21):
+def comp_hist_vol(df: pd.DataFrame | pd.Series, period: int = 21) -> pd.DataFrame | pd.Series:
     """
     Compute the histrorical vol over the given period,
     for each column of the dataframe / series.
