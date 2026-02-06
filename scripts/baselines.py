@@ -6,7 +6,7 @@ Compute scores for baseline forecasts.
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error, mean_absolute_percentage_error
 
 from fxvol.backtest import run_backtest
 from fxvol.data_utils import load_csv
@@ -23,6 +23,8 @@ y_pred = df_res["y_pred"]
 
 rmse = np.sqrt(mean_squared_error(y_true, y_pred))
 mae = mean_absolute_error(y_true, y_pred)
+mape = mean_absolute_percentage_error(y_true, y_pred)
 
 print(f"Naive forecast RMSE: {rmse:.5f}")
 print(f"Naive forecast MAE:  {mae:.5f}")
+print(f"Naive forecast MAPE:  {mape:.5f}")

@@ -33,6 +33,7 @@ def run_backtest(
         end_ix = int(start_date * len(log_ret))
     else:
         end_ix = log_ret.index.get_loc(start_date)
+
     assert isinstance(end_ix, int)
 
     # Get predicition on rolling window
