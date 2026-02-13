@@ -16,33 +16,39 @@ from arch.univariate import HARX, arch_model
 # Naive model
 
 
-def naive_forecast(X: pd.DataFrame, horizon: int, **_) -> float:
+def naive_forecast(
+    X_train: pd.DataFrame, y_train: pd.Series, horizon: int, **_
+) -> float:
     """
     Naive forecast: predict latest realized vol.
     """
 
-    return X["rv"].iloc[-1]
+    return X_train["rv"].iloc[-1]
 
 
 # Rolling mean model
 
 
-def rolling_mean_forecast(X: pd.DataFrame, horizon: int, window: int, **_) -> float:
+def rolling_mean_forecast(
+    X_train: pd.DataFrame, y_train: pd.Series, horizon: int, window: int, **_
+) -> float:
     """
     Rolling mean forecast: predict mean of latest *window* realized vol.
     """
-    return X["rv"].iloc[-window:].mean()
+    return X_train["rv"].iloc[-window:].mean()
 
 
 # Exponential weighted moving average model
 
 
-def ewma_forecast(X: pd.DataFrame, horizon: int, alpha: float) -> float:
+def ewma_forecast(
+    X_train: pd.DataFrame, y_train: pd.Series, horizon: int, alpha: float
+) -> float:
     """
     EWMA model.
     """
 
-    var = (X["lr"] ** 2).ewm(alpha=alpha, adjust=False).mean()
+    var = (X_train["lr"] ** 2).ewm(alpha=alpha, adjust=False).mean()
     return np.sqrt(var.iloc[-1])
 
 
@@ -50,7 +56,8 @@ def ewma_forecast(X: pd.DataFrame, horizon: int, alpha: float) -> float:
 
 
 def har_forecast(
-    X: pd.DataFrame,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
     horizon: int,
     lags: List[int],
     scale: int = 1000,
@@ -61,16 +68,17 @@ def har_forecast(
     Scale to avoid convergence issues.
     """
 
-    scaled_vol = (scale * X["rv"]).dropna()
+    scaled_vol = scale * X_train["rv"]
     model = HARX(scaled_vol, lags=lags, rescale=False).fit(disp="off")
-    return model.forecast(horizon=horizon).mean.iloc[0, -1] / scale  # type: ignore
+    return model.forecast(horizon=horizon).mean.iloc[-1, -1] / scale  # type: ignore
 
 
 # GARCH11 model
 
 
 def garch11_forecast(
-    X: pd.DataFrame,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
     horizon: int,
     scale: int = 100,
 ):
@@ -78,7 +86,7 @@ def garch11_forecast(
     GARCH(1, 1) model
     """
 
-    scaled_ret = scale * X["lr"]
+    scaled_ret = scale * X_train["lr"]
     am = arch_model(scaled_ret, vol="GARCH", p=1, o=0, q=1, dist="normal")
     res = am.fit(disp="off", update_freq=0)
     return np.sqrt(res.forecast(horizon=horizon).variance.iloc[-1, -1]) / scale  # type: ignore

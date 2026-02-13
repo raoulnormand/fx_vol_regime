@@ -1,7 +1,5 @@
 """
 ML-based models.
-Unlike baseline models, these take X (features) and y (target) as inputs,
-which avoids recomputations and guarantees consistency and lack of leakage.
 """
 
 # Imports
@@ -9,38 +7,30 @@ which avoids recomputations and guarantees consistency and lack of leakage.
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
-
-from fxvol.ML_utils import make_xy
+from sklearn.linear_model import LinearRegression
 
 # HAR model: OLS with features = lagged rolling vol
 # This should match with the arch package results.
 
 
-def har_ols_forecast(
-    log_ret: pd.Series,
-    real_vol: pd.Series,
+def har_type_ols_forecast(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
     horizon: int,
     lags: list[int],
-    use_asym: bool = True,
+    use_asym: bool = False,
 ) -> float:
-    # Get features
-    X, y = make_xy(
-        log_ret=log_ret,
-        real_vol=real_vol,
-        horizon=horizon,
-        lags=lags,
-        use_asym=use_asym,
-    )
-    X = sm.add_constant(X)
+    """
+    OLS with HAR like features.
+    Careful that this is not exactly HAR as we do h steps ahead forecasts
+    directly.
+    """
+    # Columns for training
+    train_cols = ["rv"] + [f"rv_{lag}" for lag in lags if lag != 1]
 
-    X_train_c = X.iloc[:-1]
-    y_train = y.iloc[:-1]
-    X_pred_c = X.iloc[-1]
+    if use_asym:
+        train_cols.append("asym")
 
-    # Train model
-    # X_train_c = sm.add_constant(X_train)
-    model = sm.OLS(y_train, X_train_c).fit()
-
-    # Get predictions
-    # X_pred_c = sm.add_constant(X_pred)
-    return float(model.predict(X_pred_c).iloc[0])
+    lr = LinearRegression()
+    lr.fit(X_train.iloc[:-1], y_train.iloc[:-1])
+    return float(lr.predict(X_train.iloc[[-1]]))

@@ -4,9 +4,12 @@ Rolling window backtesting.
 
 # Imports
 
+import numpy as np
 import pandas as pd
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 
-from fxvol.data_utils import make_xy
+from fxvol.data_utils import make_xy, save_csv
+from fxvol.fin_comp import qlike_loss
 
 # Backtest function
 
@@ -41,10 +44,13 @@ def run_backtest(
 
     while end_ix + horizon < len(y):
         # Training data, current day included
-        train = X.iloc[: end_ix + 1]
+        X_train = X.iloc[: end_ix + 1]
+        y_train = y.iloc[: end_ix + 1]
 
         # Forecast and true value
-        y_pred = forecast_fn(X=train, horizon=horizon, **kwargs)
+        y_pred = forecast_fn(
+            X_train=X_train, y_train=y_train, horizon=horizon, **kwargs
+        )
         y_true = y.iloc[end_ix]
 
         # Store results
@@ -58,3 +64,40 @@ def run_backtest(
     df = pd.DataFrame(results)
     df.set_index("Date", inplace=True)
     return df
+
+
+# Store backtest results
+
+
+def backtest_results(
+    log_ret: pd.Series,
+    models: list,
+    horizon: int,
+    file_name: str | None = None,
+    sigfig: int = 5,
+) -> pd.DataFrame:
+    """
+    Get scores for different models, and potentially saves them.
+    """
+    # Score df
+    scores = pd.DataFrame(
+        index=[model[1] for model in models], columns=["RMSE", "MAE", "QLIKE"]
+    )
+
+    # Run backtest for each model and get results
+    for forecast_fn, name, params in models:
+        results = run_backtest(
+            log_ret=log_ret, forecast_fn=forecast_fn, horizon=horizon, **params
+        )
+        y_true = results["y_true"]
+        y_pred = results["y_pred"]
+        rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+        mae = mean_absolute_error(y_true, y_pred)
+        qlike = qlike_loss(y_true, y_pred)
+        scores.loc[name] = [rmse, mae, qlike]
+
+    # Save results if desired
+    if file_name is not None:
+        save_csv(scores.astype(float).round(sigfig), "results", file_name)
+
+    return scores
