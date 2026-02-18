@@ -16,7 +16,7 @@ from arch.univariate import HARX, arch_model
 # Naive model
 
 
-def naive_forecast(
+def naive_fc(
     X_train: pd.DataFrame, y_train: pd.Series, horizon: int, **_
 ) -> float:
     """
@@ -29,7 +29,7 @@ def naive_forecast(
 # Rolling mean model
 
 
-def rolling_mean_forecast(
+def rolling_mean_fc(
     X_train: pd.DataFrame, y_train: pd.Series, horizon: int, window: int, **_
 ) -> float:
     """
@@ -41,7 +41,7 @@ def rolling_mean_forecast(
 # Exponential weighted moving average model
 
 
-def ewma_forecast(
+def ewma_fc(
     X_train: pd.DataFrame, y_train: pd.Series, horizon: int, alpha: float
 ) -> float:
     """
@@ -55,7 +55,7 @@ def ewma_forecast(
 # HAR model
 
 
-def har_forecast(
+def har_fc(
     X_train: pd.DataFrame,
     y_train: pd.Series,
     horizon: int,
@@ -76,7 +76,7 @@ def har_forecast(
 # GARCH11 model
 
 
-def garch11_forecast(
+def garch11_fc(
     X_train: pd.DataFrame,
     y_train: pd.Series,
     horizon: int,

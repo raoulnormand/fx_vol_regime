@@ -15,7 +15,8 @@ from fxvol.fin_comp import qlike_loss
 
 
 def run_backtest(
-    log_ret: pd.Series,
+    X: pd.DataFrame,
+    y: pd.Series,
     horizon: int,
     forecast_fn,
     start_date: float | str = 0.5,
@@ -23,18 +24,16 @@ def run_backtest(
     **kwargs,
 ) -> pd.DataFrame:
     """
-    Run backtests for the corresponding model.
+    Run backtests for the corresponding model, with design matrix X
+    and target y (which may not be needed).
     Start at start_date (date or fraction of total time), and jumps by stride each time.
     Computes value for the given horizon.
     """
-    # Compute features and target
-    X, y = make_xy(log_ret=log_ret, horizon=horizon, **kwargs)
-
     # Get index of start date
     if isinstance(start_date, float):
-        end_ix = int(start_date * len(log_ret))
+        end_ix = int(start_date * len(y))
     else:
-        end_ix = log_ret.index.get_loc(start_date)
+        end_ix = y.index.get_loc(start_date)
 
     assert isinstance(end_ix, int)
 
@@ -71,14 +70,19 @@ def run_backtest(
 
 def backtest_results(
     log_ret: pd.Series,
+    feature_kwargs: dict,
     models: list,
     horizon: int,
+    start_date: float | str = 0.5,
+    stride: int = 1,
     file_name: str | None = None,
     sigfig: int = 5,
 ) -> pd.DataFrame:
     """
     Get scores for different models, and potentially saves them.
     """
+    X, y = make_xy(log_ret=log_ret, horizon=horizon, **feature_kwargs)
+
     # Score df
     scores = pd.DataFrame(
         index=[model[1] for model in models], columns=["RMSE", "MAE", "QLIKE"]
@@ -87,7 +91,13 @@ def backtest_results(
     # Run backtest for each model and get results
     for forecast_fn, name, params in models:
         results = run_backtest(
-            log_ret=log_ret, forecast_fn=forecast_fn, horizon=horizon, **params
+            X,
+            y,
+            horizon,
+            forecast_fn,
+            start_date=start_date,
+            stride=stride,
+            **params,
         )
         y_true = results["y_true"]
         y_pred = results["y_pred"]

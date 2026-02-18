@@ -55,7 +55,7 @@ def make_features(
     log_ret: pd.Series,
     window: int,
     lags: list[int] | None = None,
-    use_asym: bool = False,
+    vol_vol: int | None = None,
 ):
     """
     Create features for training models.
@@ -75,10 +75,10 @@ def make_features(
             else:
                 X[f"rv_{lag}"] = X["rv"].rolling(lag).mean()
 
-    # Asymmetric feature: vol * 1_{< 0 return}
+    # Vol of vol = std of vol -> feature to capture regime changes
 
-    if use_asym:
-        X["asym"] = X["rv"] * (log_ret < 0).astype(float)
+    if vol_vol:
+        X["vv"] = X["rv"].rolling(vol_vol).std()
 
     return X
 
@@ -90,7 +90,7 @@ def make_xy(
     log_ret: pd.Series,
     horizon: int,
     lags: list[int] | None = None,
-    use_asym: bool = False,
+    vol_vol: int | None = 22,
     **_,
 ) -> tuple[pd.DataFrame, pd.Series]:
     """
@@ -99,7 +99,7 @@ def make_xy(
     Note that realized vol over horizon days for consistency.
     """
     # Features
-    X = make_features(log_ret, window=horizon, lags=lags, use_asym=use_asym)
+    X = make_features(log_ret, window=horizon, lags=lags, vol_vol=vol_vol)
 
     # Target = shifted real_vol
     y = X["rv"].shift(-horizon).rename("y")
