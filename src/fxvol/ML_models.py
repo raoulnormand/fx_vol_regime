@@ -4,9 +4,7 @@ ML-based models.
 
 # Imports
 
-import numpy as np
 import pandas as pd
-import statsmodels.api as sm
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.linear_model import ElasticNet, LinearRegression
 
